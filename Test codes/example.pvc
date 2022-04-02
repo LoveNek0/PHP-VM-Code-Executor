@@ -1,0 +1,18 @@
+ASSIGN		$x1		S"Hello"
+ASSIGN		$x2		S"world!"
+CONCAT		$x1		$x1		S" "
+CONCAT		$x1		$x1		$x2
+ECHO		$x1
+ADD			$x1		L15		L5
+DIV			$x2		$x1		D2
+ECHO		$x2
+
+IF			TRUE	if_1	else_1
+POINT		if_1
+	
+GOTO		endif_1
+POINT		else_1
+
+POINT		endif_1
+
+EXIT		$x1
