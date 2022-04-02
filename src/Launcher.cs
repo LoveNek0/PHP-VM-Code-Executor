@@ -5,7 +5,9 @@ using PHP.VM.Runtime.Entities;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace PHP.VM
 {
@@ -13,21 +15,17 @@ namespace PHP.VM
     {       
         public static void Main(string[] args)
         {
-            string code = File.ReadAllText(@"D:\Projects\CSharp\PHP-VM-Code-Executor\Test codes\example.pvc");
+            string code = File.ReadAllText(args[0]);
             Lexer lexer = new Lexer(code);
             TokenItem[][] tokens = lexer.Parse(true);
-            int i = 1;
-            foreach(TokenItem[] tokenItems in tokens)
-            {
-                Console.WriteLine("Line: " + i++);
-                foreach (TokenItem tokenItem in tokenItems)
-                    Console.WriteLine("    [" + tokenItem.type.ToString() + "]\t\t\t" + tokenItem.data);
-                Console.WriteLine();
-            }
             Syntaxer syntaxer = new Syntaxer(tokens);
             Operation[] operations = syntaxer.Parse();
-            Executor executor = new Executor();
-            int result = executor.Run(operations);
+            Executor executor = new Executor(operations);
+            executor.OnMessageEventHandler = delegate (string message)
+            {
+                Console.WriteLine(message);
+            };
+            int result = executor.Run();
             Console.WriteLine("Result: " + result);
             Console.ReadKey();
         }

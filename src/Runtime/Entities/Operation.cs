@@ -14,6 +14,8 @@ namespace PHP.VM.Runtime.Entities
             ECHO,
             EXIT,
             UNSET,
+            POINT,
+            GOTO,
 
             //  Binary
             ASSIGN,
@@ -23,7 +25,14 @@ namespace PHP.VM.Runtime.Entities
             MUL,
             DIV,
             MOD,
-            POW
+            POW,
+            IF,
+            EQUAL,
+            NOT_EQUAL,
+            MORE,
+            LESS,
+            MORE_EQUAL,
+            LESS_EQUAL
         }
 
         public readonly Type type;

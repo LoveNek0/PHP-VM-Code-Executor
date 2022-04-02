@@ -27,6 +27,13 @@ namespace PHP.VM.Lang.Token
         DIV,
         MOD,
         POW,
+        IF,
+        EQUAL,
+        NOT_EQUAL,
+        MORE,
+        LESS,
+        MORE_EQUAL,
+        LESS_EQUAL,
 
         //  Ternary
         CONCAT,

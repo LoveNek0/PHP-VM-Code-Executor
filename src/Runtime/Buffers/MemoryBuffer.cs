@@ -14,8 +14,10 @@ namespace PHP.VM.Runtime.Buffers
 
         }
 
-        public void Set(object key, object value) => buffer[key] = value;
-        public object Get(object key) => buffer[key];
-        public void Unset(object key) => buffer.Remove(key);
+        internal void Clear() => buffer.Clear();
+
+        internal void Set(object key, object value) => buffer[key] = value;
+        internal object Get(object key) => buffer[key];
+        internal void Unset(object key) => buffer.Remove(key);
     }
 }

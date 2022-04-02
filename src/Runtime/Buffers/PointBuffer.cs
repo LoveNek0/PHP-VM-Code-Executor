@@ -1,4 +1,5 @@
 ﻿using PHP.VM.Exceptions;
+using PHP.VM.Runtime.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,16 +12,17 @@ namespace PHP.VM.Runtime.Buffers
     {
         private Dictionary<string, int> points = new Dictionary<string, int>();
 
-        public PointBuffer() { }
-
-        public void Add(string key, int value)
-        {
-            if (points.ContainsKey(key))
-                throw new RuntimeException("Point \"" + key + "\" already defined on line " + points[key]);
-            points.Add(key, value);
+        public PointBuffer(Operation[] operations) {
+            int line = 0;
+            foreach (Operation operation in operations)
+            {
+                if (operation.type == Operation.Type.POINT)
+                    points.Add((string)operation.arguments[0].value, line);
+                line++;
+            }
         }
 
-        public int Get(string key)
+        internal int Get(string key)
         {
             if(!points.ContainsKey(key))
                 throw new RuntimeException("Point \"" + key + "\" not defined");

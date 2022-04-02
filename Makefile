@@ -28,7 +28,7 @@ compile-lib: clean
 	
 run: compile-bin
 	@echo "Running \"$(OUTPUT_BIN)\"..."
-	@mono $(OUTPUT_BIN)
+	@mono $(OUTPUT_BIN) $(RUN_ARGS)
 	@echo "Program exited with code $$?"
 
 dump-lib:

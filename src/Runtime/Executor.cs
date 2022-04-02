@@ -10,17 +10,40 @@ namespace PHP.VM.Runtime
 {
     public class Executor
     {
-        public Executor() { }
+        public delegate void OnMessageEvent(string message);
+        
+        private readonly Operation[] operations;
 
+        private readonly MemoryBuffer memory = new MemoryBuffer();
+        private readonly PointBuffer pointBuffer;
+        private bool _IsRun = false;
 
-        public int Run(Operation[] operations) => Run(new Queue<Operation>(operations));
-        public int Run(Queue<Operation> operations)
+        public OnMessageEvent OnMessageEventHandler = null;
+        public bool IsRun
         {
-            MemoryBuffer memory = new MemoryBuffer();
-            OutputBuffer output = new OutputBuffer();
-            while (operations.Count > 0)
+            get { return _IsRun; }
+        }
+
+        public Executor(Operation[] operations)
+        {
+            this.operations = operations;
+            this.pointBuffer = new PointBuffer(operations);
+        }
+
+        public int Run()
+        {
+            _IsRun = true;
+            int result = ExecuteOperations();
+            _IsRun = false;
+            return result;
+        }
+
+        private int ExecuteOperations()
+        {
+            memory.Clear();
+            for (int i = 0; i < operations.Length; i++)
             {
-                Operation operation = operations.Dequeue();
+                Operation operation = operations[i];
                 switch (operation.type)
                 {
                     case Operation.Type.ECHO:
@@ -28,7 +51,7 @@ namespace PHP.VM.Runtime
                             dynamic left = operation.arguments[0].value;
                             if (operation.arguments[0].type == Argument.Type.VAR)
                                 left = memory.Get(operation.arguments[0].value);
-                            output.Write(left);
+                            OnMessageEventHandler(left.ToString());
                         }
                         break;
                     case Operation.Type.EXIT:
@@ -38,6 +61,15 @@ namespace PHP.VM.Runtime
                                 left = memory.Get(operation.arguments[0].value);
                             return (int)left;
                         }
+                    case Operation.Type.UNSET:
+                        memory.Unset(operation.arguments[0].value);
+                        break;
+                    case Operation.Type.POINT:
+                        break;
+                    case Operation.Type.GOTO:
+                        i = pointBuffer.Get(operation.arguments[0].value.ToString());
+                        break;
+
                     case Operation.Type.ASSIGN:
                         {
                             dynamic left = operation.arguments[1].value;
@@ -131,6 +163,87 @@ namespace PHP.VM.Runtime
                             memory.Set(operation.arguments[0].value, Math.Pow(left, right));
                         }
                         break;
+                    case Operation.Type.IF:
+                        {
+                            bool status = (bool)memory.Get(operation.arguments[0].value);
+                            int success = pointBuffer.Get((string)operation.arguments[1].value);
+                            int failture = pointBuffer.Get((string)operation.arguments[2].value);
+                            i = status ? success : failture;
+                        }
+                        break;
+                    case Operation.Type.EQUAL:
+                        {
+                            dynamic left = operation.arguments[1].value;
+                            dynamic right = operation.arguments[2].value;
+                            if (operation.arguments[1].type == Argument.Type.VAR)
+                                left = memory.Get(operation.arguments[1].value);
+                            if (operation.arguments[2].type == Argument.Type.VAR)
+                                right = memory.Get(operation.arguments[2].value);
+
+                            memory.Set(operation.arguments[0].value, left == right);
+                        }
+                        break;
+                    case Operation.Type.NOT_EQUAL:
+                        {
+                            dynamic left = operation.arguments[1].value;
+                            dynamic right = operation.arguments[2].value;
+                            if (operation.arguments[1].type == Argument.Type.VAR)
+                                left = memory.Get(operation.arguments[1].value);
+                            if (operation.arguments[2].type == Argument.Type.VAR)
+                                right = memory.Get(operation.arguments[2].value);
+
+                            memory.Set(operation.arguments[0].value, left != right);
+                        }
+                        break;
+                    case Operation.Type.MORE:
+                        {
+                            dynamic left = operation.arguments[1].value;
+                            dynamic right = operation.arguments[2].value;
+                            if (operation.arguments[1].type == Argument.Type.VAR)
+                                left = memory.Get(operation.arguments[1].value);
+                            if (operation.arguments[2].type == Argument.Type.VAR)
+                                right = memory.Get(operation.arguments[2].value);
+
+                            memory.Set(operation.arguments[0].value, left > right);
+                        }
+                        break;
+                    case Operation.Type.LESS:
+                        {
+                            dynamic left = operation.arguments[1].value;
+                            dynamic right = operation.arguments[2].value;
+                            if (operation.arguments[1].type == Argument.Type.VAR)
+                                left = memory.Get(operation.arguments[1].value);
+                            if (operation.arguments[2].type == Argument.Type.VAR)
+                                right = memory.Get(operation.arguments[2].value);
+
+                            memory.Set(operation.arguments[0].value, left < right);
+                        }
+                        break;
+                    case Operation.Type.MORE_EQUAL:
+                        {
+                            dynamic left = operation.arguments[1].value;
+                            dynamic right = operation.arguments[2].value;
+                            if (operation.arguments[1].type == Argument.Type.VAR)
+                                left = memory.Get(operation.arguments[1].value);
+                            if (operation.arguments[2].type == Argument.Type.VAR)
+                                right = memory.Get(operation.arguments[2].value);
+
+                            memory.Set(operation.arguments[0].value, left >= right);
+                        }
+                        break;
+                    case Operation.Type.LESS_EQUAL:
+                        {
+                            dynamic left = operation.arguments[1].value;
+                            dynamic right = operation.arguments[2].value;
+                            if (operation.arguments[1].type == Argument.Type.VAR)
+                                left = memory.Get(operation.arguments[1].value);
+                            if (operation.arguments[2].type == Argument.Type.VAR)
+                                right = memory.Get(operation.arguments[2].value);
+
+                            memory.Set(operation.arguments[0].value, left <= right);
+                        }
+                        break;
+
                 }
             }
             return 0;

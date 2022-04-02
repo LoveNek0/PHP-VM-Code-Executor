@@ -15,25 +15,33 @@ namespace PHP.VM.Lang
         private readonly TokenItem[][] tokenLines;
         public Syntaxer(TokenItem[][] tokenLines) => this.tokenLines = tokenLines;
 
+        TokenItem NextToken(int line, ref int position, params TokenType[] expected)
+        {
+            return expected != null && !expected.Contains(tokenLines[line][position].type) && expected.Length > 0
+                ? throw new SyntaxException("Unexpected token " + tokenLines[line][position].type, tokenLines[line][position].line, tokenLines[line][position].column)
+                : tokenLines[line][position++];
+        }
+
         private Operation ParseLine(int line)
         {
             int position = 0;
-            TokenItem NextToken(params TokenType[] expected) => 
-                expected != null && !expected.Contains(tokenLines[line][position].type) && expected.Length > 0
-                    ? throw new SyntaxException("Unexpected token " + tokenLines[line][position].type, tokenLines[line][position].line, tokenLines[line][position].column)
-                    : tokenLines[line][position++];
-            TokenItem opItem = NextToken(
+            TokenItem opItem = NextToken(line, ref position,
                 TokenType.ECHO, TokenType.EXIT,
+                TokenType.POINT, TokenType.GOTO,
                 TokenType.ASSIGN, TokenType.CONCAT,
                 TokenType.ADD, TokenType.SUB,
                 TokenType.MUL, TokenType.DIV,
-                TokenType.MOD, TokenType.POW);
+                TokenType.MOD, TokenType.POW,
+                TokenType.IF,
+                TokenType.EQUAL, TokenType.NOT_EQUAL,
+                TokenType.MORE, TokenType.LESS,
+                TokenType.MORE_EQUAL, TokenType.LESS_EQUAL);
             if (tokenLines[line].Length - 1 != opItem.type.GetExpected().Length)
                 throw new SyntaxException("Incorrect number of arguments for operator " + opItem.type, opItem.line, opItem.column);
             List<Argument> args = new List<Argument>();
             for(int i = 0; i < opItem.type.GetExpected().Length; i++)
             {
-                TokenItem arg = NextToken(opItem.type.GetExpected()[i]);
+                TokenItem arg = NextToken(line, ref position, opItem.type.GetExpected()[i]);
                 switch (arg.type)
                 {
                     case TokenType.VAR:
@@ -48,6 +56,9 @@ namespace PHP.VM.Lang
                     case TokenType.ENCLOSED_STRING:
                         args.Add(new ArgEnclosedString(arg.data.Substring(2, arg.data.Length - 3)));
                         break;
+                    case TokenType.CONST_STRING:
+                        args.Add(new ArgConstString(arg.data.Substring(2, arg.data.Length - 3)));
+                        break;
                     case TokenType.BOOLEAN:
                         args.Add(new ArgBoolean(arg.data == "TRUE" ? true : false));
                         break;
@@ -59,6 +70,12 @@ namespace PHP.VM.Lang
                     return new Operation(Operation.Type.ECHO, args.ToArray());
                 case TokenType.EXIT:
                     return new Operation(Operation.Type.EXIT, args.ToArray());
+                case TokenType.UNSET:
+                    return new Operation(Operation.Type.UNSET, args.ToArray());
+                case TokenType.POINT:
+                    return new Operation(Operation.Type.POINT, args.ToArray());
+                case TokenType.GOTO:
+                    return new Operation(Operation.Type.GOTO, args.ToArray());
                 case TokenType.ASSIGN:
                     return new Operation(Operation.Type.ASSIGN, args.ToArray());
                 case TokenType.CONCAT:
@@ -75,6 +92,20 @@ namespace PHP.VM.Lang
                     return new Operation(Operation.Type.MOD, args.ToArray());
                 case TokenType.POW:
                     return new Operation(Operation.Type.POW, args.ToArray());
+                case TokenType.IF:
+                    return new Operation(Operation.Type.IF, args.ToArray());
+                case TokenType.EQUAL:
+                    return new Operation(Operation.Type.EQUAL, args.ToArray());
+                case TokenType.NOT_EQUAL:
+                    return new Operation(Operation.Type.NOT_EQUAL, args.ToArray());
+                case TokenType.MORE:
+                    return new Operation(Operation.Type.MORE, args.ToArray());
+                case TokenType.LESS:
+                    return new Operation(Operation.Type.LESS, args.ToArray());
+                case TokenType.MORE_EQUAL:
+                    return new Operation(Operation.Type.MORE_EQUAL, args.ToArray());
+                case TokenType.LESS_EQUAL:
+                    return new Operation(Operation.Type.LESS_EQUAL, args.ToArray());
             }
             throw new SyntaxException("WTF??!", opItem.line, opItem.column);
         }
